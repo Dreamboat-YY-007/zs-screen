@@ -1,5 +1,7 @@
 import axios from 'axios'
 import { getCookie } from './token'
+
+// 基地址配置
 const service = axios.create({
   baseURL: 'https://api-hmzs.itheima.net/v1',
   timeout: 5000 // request timeout
