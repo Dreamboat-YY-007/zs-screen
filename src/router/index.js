@@ -11,9 +11,10 @@ const router = createRouter({
   // 定义路由对象
   routes: [
     {
+      // path 和 commponent 是一一对应的关系
       path: '/',
       name: 'home',
-      component: HomeView, // （不管用不用都会加载）
+      component: HomeView, // （不管用不用都会加载资源）
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
