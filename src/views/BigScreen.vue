@@ -1,5 +1,20 @@
 <script setup>
+import { getParkInfoAPI } from '@/api/index'
+import { onMounted, ref } from 'vue'
 
+// 获取园区概况数据
+const parkInfo = ref({})
+
+const getUserInfo = async () => {
+  // 1、调用接口
+  const res = await getParkInfoAPI()
+  // 2、覆盖响应式数据
+  parkInfo.value = res.data
+}
+
+onMounted(() => {
+  getUserInfo()
+})
 </script>
 
 <template>
@@ -15,7 +30,14 @@
         <div class="item">
           <div class="icons-item building-icon">
             <span class="number">
-              {{ 28 }}
+              <!--
+                为什么 parkInfo.base 是一个 undefined？
+                原因：首次数据还没有回来的时候，完成了第一次渲染 出错了
+                {}.base - undefined - undefined.buildingTotal
+                解决：可选链：【?.】 - 必须保证?前面的东西不是 undefined 且不是 null 才会执行后面的点运算
+               -->
+              <!-- {{ parkInfo.base.buildingTotal }} -->
+              {{ parkInfo.base?.buildingTotal }}
             </span>
           </div>
           <span class="title">楼宇总数</span>
@@ -24,7 +46,7 @@
         <div class="item">
           <div class="icons-item enterprise-icon">
             <span class="number">
-              {{ 28 }}
+              {{ parkInfo.base?.enterpriseTotal }}
             </span>
           </div>
           <span class="title">入驻企业总数</span>
@@ -33,7 +55,7 @@
         <div class="item">
           <div class="icons-item car-icon">
             <span class="number">
-              {{ 20 }}
+              {{ parkInfo.base?.parkingTotal }}
             </span>
           </div>
           <span class="title">车位总数</span>
@@ -42,7 +64,7 @@
         <div class="item">
           <div class="icons-item rod-icon">
             <span class="number">
-              {{ 30 }}
+              {{ parkInfo.base?.chargePoleTotal }}
             </span>
           </div>
           <span class="title">一体杆总数</span>
@@ -81,6 +103,7 @@
 
 .section-one {
   flex-basis: 25%;
+
   .icons-container {
     display: flex;
     justify-content: space-between;
@@ -107,20 +130,20 @@
       }
 
       .building-icon {
-        background: url("@/assets/building-icon.png") no-repeat 50% 0 / contain;
+        background: url('@/assets/building-icon.png') no-repeat 50% 0 / contain;
       }
 
       .enterprise-icon {
-        background: url("@/assets/enterprise-icon.png") no-repeat 50% 0 /
+        background: url('@/assets/enterprise-icon.png') no-repeat 50% 0 /
           contain;
       }
 
       .rod-icon {
-        background: url("@/assets/rod-icon.png") no-repeat 50% 0 / contain;
+        background: url('@/assets/rod-icon.png') no-repeat 50% 0 / contain;
       }
 
       .car-icon {
-        background: url("@/assets/car-icon.png") no-repeat 50% 0 / contain;
+        background: url('@/assets/car-icon.png') no-repeat 50% 0 / contain;
       }
 
       .title,

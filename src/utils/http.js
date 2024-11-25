@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getCookie } from './token'
+import { getToken } from './token'
 
 // 基地址配置
 const service = axios.create({
@@ -10,7 +10,7 @@ const service = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    const token = getCookie()
+    const token = getToken()
     if (token) {
       config.headers.Authorization = token
     }
