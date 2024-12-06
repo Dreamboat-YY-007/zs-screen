@@ -3,34 +3,33 @@ import { onMounted, ref, watch } from 'vue'
 import * as echarts from 'echarts'
 import { getParkInfoAPI } from '@/api/index'
 
-// 获取园区概况数据
+// 1、获取园区概况数据
 const parkInfo = ref({})
-
 const getUserInfo = async () => {
-  // 1、调用接口
+  // 1.1、调用接口
   const res = await getParkInfoAPI()
-  // 2、覆盖响应式数据
+  // 1.2、覆盖响应式数据
   parkInfo.value = res.data
 }
 
-// 渲染年度收入
+// 2、渲染年度收入
 /**
  * Echarts 实现流程
- * 1、准备一个要渲染的位置 div
- * 2、实例化
- * 3、准备配置项参数
- * 4、实例 setOption(参数)
+ * 2.1、准备一个要渲染的位置 div
+ * 2.2、实例化
+ * 2.3、准备配置项参数
+ * 2.4、实例 setOption(参数)
  */
 
-//  1、获取要渲染的节点位置
+// 2.1、获取要渲染的节点位置
 const barChart = ref(null)
 let myChart = null // 判断图表是否已存在
-// 2、初始化图表实例（前置要求：必须 dom 是可用状态，barChart 必须已经成功拿到了 dom 元素才可以 — mounted 中做初始化）
-function initChart() {
+// 2.2、初始化图表实例（前置要求：必须 dom 是可用状态，barChart 必须已经成功拿到了 dom 元素才可以 — mounted 中做初始化）
+function initBarChart() {
   // 渲染年度收入分析图表
-  // 2.1、解构图表数据
+  // 2.2.1、解构图表数据
   const { parkIncome } = parkInfo.value
-  // 2.2. 准备options数据
+  // 2.3. 准备options数据
   const barOptions = {
     tooltip: {
       // 图表样式
@@ -92,24 +91,80 @@ function initChart() {
       color: '#B4C0CC',
     },
   }
-  // 2.3、渲染图表
+  // 2.4、渲染图表
   if (myChart) {
-    // 如果图表已经存在，则直接更新数据
+    // 2.4.1、如果图表已经存在，则直接更新数据
     barOptions && myChart.setOption(barOptions) // 短路与，前面为 true 才继续往后执行
   } else {
-    // 如果图表不存在，则初始化它
-    const myChart = echarts.init(barChart.value)
+    // 2.4.2、如果图表不存在，则实例化它
+    myChart = echarts.init(barChart.value)
     barOptions && myChart.setOption(barOptions)
   }
 }
 
+// 3、渲染园区产业分布
+// 3.1、获取要渲染的节点位置
+const pieChart = ref(null)
+let myPieChart = null
+// 3.2、渲染园林产业分布图表
+const initPieChart = () => {
+  // 3.2.1、解构图表数据
+  const { parkIndustry } = parkInfo.value
+  // 3.3、准备 options 数据
+  const pieOption = {
+    color: ['#00B2FF', '#2CF2FF', '#892CFF', '#FF624D', '#FFCF54', '#86ECA2'],
+    legend: {
+      itemGap: 20,
+      bottom: '0',
+      icon: 'rect',
+      itemHeight: 10, // 图例icon高度
+      itemWidth: 10, // 图例icon宽度
+      textStyle: {
+        color: '#c6d1db',
+      },
+    },
+    tooltip: {
+      trigger: 'item',
+    },
+    series: [
+      {
+        name: '园区产业分析',
+        type: 'pie',
+        radius: ['55%', '60%'], // 设置内圈与外圈的半径使其呈现为环形
+        center: ['50%', '40%'], // 圆心位置， 用于调整整个图的位置
+        tooltip: {
+          trigger: 'item',
+          formatter: params => {
+            return `${params.seriesName}</br><div style='display:flex;justify-content: space-between;'><div>${params.marker}${params.name}</div><div>${params.percent}%</div></div>`
+          },
+        },
+        label: {
+          show: false,
+          position: 'center',
+        },
+        data: parkIndustry,
+      },
+    ],
+  }
+  // 3.4、实例化并渲染图表
+  if (myPieChart) {
+    // 3.4.1、如果图表已经存在，则直接更新数据
+    pieOption && myPieChart.setOption(pieOption)
+  } else {
+    // 3.4.2、如果图表不存在，则实例化它
+    myPieChart = echarts.init(pieChart.value)
+    pieOption && myPieChart.setOption(pieOption)
+  }
+}
+
 onMounted(async () => {
-  // 保证图表依赖的数据已经完全返回，再做图表的初始化
+  // 1.3、保证图表依赖的数据已经完全返回，再做图表的初始化
   await getUserInfo()
-  initChart()
+  initBarChart()
+  initPieChart()
 })
 
-// 侦听图表数据，当数据发生改变时，重新渲染图表数据
+// 2.5、侦听图表数据，当数据发生改变时，重新渲染图表数据
 watch(
   () => {
     // 问题：deep 为 true，Vue 针对于传入的对象进行递归处理，如果要处理的对象非常大，会有性能问题
@@ -118,9 +173,18 @@ watch(
     return parkInfo.value?.parkIncome
   },
   () => {
-    initChart()
+    initBarChart()
   }
   // { immediate: false, deep: true }
+)
+// 3.5、侦听图表数据，当数据发生改变时，重新渲染图表数据
+watch(
+  () => {
+    return parkInfo.value?.parkIndustry
+  },
+  () => {
+    initPieChart()
+  }
 )
 </script>
 
@@ -195,6 +259,15 @@ watch(
         </div>
       </div>
       <div class="bar-chart" ref="barChart"></div>
+    </div>
+    <!-- 园区产业分布 -->
+    <div class="section-three">
+      <img
+        class="img-header"
+        src="https://yjy-teach-oss.oss-cn-beijing.aliyuncs.com/smartPark/%E5%A4%A7%E5%B1%8F%E5%88%87%E5%9B%BE/%E5%9B%AD%E5%8C%BA%E4%BA%A7%E4%B8%9A%E5%88%86%E5%B8%83%402x.png"
+        alt=""
+      />
+      <div class="pie-chart" ref="pieChart"></div>
     </div>
   </div>
 </template>
@@ -290,6 +363,18 @@ watch(
   .bar-chart {
     width: 100%;
     height: calc(100% - 90px);
+  }
+}
+
+.section-three {
+  flex-basis: 40%;
+
+  .pie-chart {
+    position: relative;
+    margin: 0 auto;
+    padding-bottom: 20px;
+    width: 80%;
+    height: calc(100% - 40px);
   }
 }
 </style>
