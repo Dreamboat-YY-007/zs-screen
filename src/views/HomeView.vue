@@ -1,9 +1,5 @@
-<script setup>
-
-</script>
+<script setup></script>
 
 <template>
-  <main>
-    首页
-  </main>
+  <main>首页</main>
 </template>
