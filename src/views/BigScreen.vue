@@ -1,7 +1,9 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
-import * as echarts from 'echarts'
-import { getParkInfoAPI } from '@/api/index'
+import { onMounted, watch } from 'vue'
+// 导入封装的方法
+import { useInitParkInfo } from './composition/useInitParkInfo'
+import { useInitBartChart } from './composition/useInitBartChart'
+import { useInitPieChart } from './composition/useInitPieChart'
 
 /**
  * 2D 图表 — 图表通用实现流程
@@ -26,160 +28,14 @@ import { getParkInfoAPI } from '@/api/index'
  * 【带有自动渲染机制】
  */
 
-// 1、获取园区概况数据
-const parkInfo = ref({})
-const getUserInfo = async () => {
-  // 1.1、调用接口
-  const res = await getParkInfoAPI()
-  // 1.2、覆盖响应式数据
-  parkInfo.value = res.data
-}
+// 获取园区数据
+const { parkInfo, getUserInfo } = useInitParkInfo()
+// 渲染年度收入分析2d图表
+const { initBarChart, barChart } = useInitBartChart(parkInfo)
+// 渲染园区产业分布2d图表
+const { initPieChart, pieChart } = useInitPieChart(parkInfo)
 
-// 2、渲染年度收入
-/**
- * Echarts 实现流程
- * 2.1、准备一个要渲染的位置 div
- * 2.2、实例化
- * 2.3、准备配置项参数
- * 2.4、实例 setOption(参数)
- */
-
-// 2.1、获取要渲染的节点位置
-const barChart = ref(null)
-let myChart = null // 判断图表是否已存在
-// 2.2、初始化图表实例（前置要求：必须 dom 是可用状态，barChart 必须已经成功拿到了 dom 元素才可以 — mounted 中做初始化）
-function initBarChart() {
-  // 渲染年度收入分析图表
-  // 2.2.1、解构图表数据
-  const { parkIncome } = parkInfo.value
-  // 2.3. 准备options数据
-  const barOptions = {
-    tooltip: {
-      // 图表样式
-      trigger: 'axis',
-      axisPointer: {
-        type: 'shadow',
-      },
-    },
-    grid: {
-      // 让图表占满容器
-      top: '10px',
-      left: '0px',
-      right: '0px',
-      bottom: '0px',
-      containLabel: true,
-    },
-    xAxis: [
-      // X轴数据
-      {
-        type: 'category',
-        axisTick: {
-          alignWithLabel: true,
-          show: false,
-        },
-        data: parkIncome.xMonth,
-      },
-    ],
-    yAxis: [
-      // Y轴数据
-      {
-        type: 'value',
-        splitLine: {
-          show: false,
-        },
-      },
-    ],
-    series: [
-      {
-        name: '园区年度收入',
-        type: 'bar',
-        barWidth: '10px',
-        data: parkIncome.yIncome.map((item, index) => {
-          // 奇偶行颜色不一样
-          const color =
-            index % 2 === 0
-              ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0.23, color: '#74c0f8' },
-                  { offset: 1, color: 'rgba(116,192,248,0.00)' },
-                ])
-              : new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0.23, color: '#ff7152' },
-                  { offset: 1, color: 'rgba(255,113,82,0.00)' },
-                ])
-          return { value: item, itemStyle: { color } }
-        }),
-      },
-    ],
-    textStyle: {
-      color: '#B4C0CC',
-    },
-  }
-  // 2.4、渲染图表
-  if (myChart) {
-    // 2.4.1、如果图表已经存在，则直接更新数据
-    barOptions && myChart.setOption(barOptions) // 短路与，前面为 true 才继续往后执行
-  } else {
-    // 2.4.2、如果图表不存在，则实例化它
-    myChart = echarts.init(barChart.value)
-    barOptions && myChart.setOption(barOptions)
-  }
-}
-
-// 3、渲染园区产业分布
-// 3.1、获取要渲染的节点位置
-const pieChart = ref(null)
-let myPieChart = null
-// 3.2、渲染园林产业分布图表
-const initPieChart = () => {
-  // 3.2.1、解构图表数据
-  const { parkIndustry } = parkInfo.value
-  // 3.3、准备 options 数据
-  const pieOption = {
-    color: ['#00B2FF', '#2CF2FF', '#892CFF', '#FF624D', '#FFCF54', '#86ECA2'],
-    legend: {
-      itemGap: 20,
-      bottom: '0',
-      icon: 'rect',
-      itemHeight: 10, // 图例icon高度
-      itemWidth: 10, // 图例icon宽度
-      textStyle: {
-        color: '#c6d1db',
-      },
-    },
-    tooltip: {
-      trigger: 'item',
-    },
-    series: [
-      {
-        name: '园区产业分析',
-        type: 'pie',
-        radius: ['55%', '60%'], // 设置内圈与外圈的半径使其呈现为环形
-        center: ['50%', '40%'], // 圆心位置， 用于调整整个图的位置
-        tooltip: {
-          trigger: 'item',
-          formatter: params => {
-            return `${params.seriesName}</br><div style='display:flex;justify-content: space-between;'><div>${params.marker}${params.name}</div><div>${params.percent}%</div></div>`
-          },
-        },
-        label: {
-          show: false,
-          position: 'center',
-        },
-        data: parkIndustry,
-      },
-    ],
-  }
-  // 3.4、实例化并渲染图表
-  if (myPieChart) {
-    // 3.4.1、如果图表已经存在，则直接更新数据
-    pieOption && myPieChart.setOption(pieOption)
-  } else {
-    // 3.4.2、如果图表不存在，则实例化它
-    myPieChart = echarts.init(pieChart.value)
-    pieOption && myPieChart.setOption(pieOption)
-  }
-}
-
+// 调度图表渲染
 onMounted(async () => {
   // 1.3、保证图表依赖的数据已经完全返回，再做图表的初始化
   await getUserInfo()
