@@ -1,9 +1,11 @@
 <script setup>
 import { onMounted, watch } from 'vue'
 // 导入封装的方法
-import { useInitParkInfo } from './composition/useInitParkInfo'
-import { useInitBartChart } from './composition/useInitBartChart'
-import { useInitPieChart } from './composition/useInitPieChart'
+import {
+  useInitParkInfo,
+  useInitBartChart,
+  useInitPieChart,
+} from './composition'
 
 /**
  * 2D 图表 — 图表通用实现流程
